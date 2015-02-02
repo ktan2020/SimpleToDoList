@@ -3,21 +3,18 @@ package com.example.simpletodolist;
 import java.util.ArrayList;
 
 import android.app.Activity;
-import android.os.Bundle;
-import android.view.Menu;
-import android.view.View;
-import android.view.MenuItem;
-import android.widget.ArrayAdapter;
-import android.widget.AdapterView;
-import android.widget.ListView;
-import android.widget.EditText;
-import android.widget.Toast;
 import android.content.Context;
-import android.util.Log;
 import android.content.Intent;
-import java.io.File;
-import java.io.IOException;
-import org.apache.commons.io.FileUtils;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.Toast;
 
 public class TodoActivity extends Activity {
 
@@ -25,49 +22,61 @@ public class TodoActivity extends Activity {
 	private final int REQUEST_CODE = 20;
 
 	
-	ArrayList<String> items;
-	ArrayAdapter<String> itemsAdapter;
+	ArrayList<TodoItem> items;
+	ArrayAdapter<TodoItem> itemsAdapter;
 	ListView lvItems;
+	TodoItemDatabase db;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_todo);
-		readItems();
+		
+		db = new TodoItemDatabase(this);
+		items = (ArrayList<TodoItem>) db.getAllTodoItems();
 		
 		lvItems = (ListView)findViewById(R.id.lvItems);
 		
-		itemsAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, items);
+		itemsAdapter = new ArrayAdapter<TodoItem>(this, android.R.layout.simple_list_item_1, items);
 		lvItems.setAdapter(itemsAdapter);
 		
-		//items = new ArrayList<String>();
-		//items.add("First Item");
-		//items.add("Second Item");
 		setUpListViewListener(this);
 	}
 
 	public void setUpListViewListener(final Context ctx) {
 		lvItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override
-			public void onItemClick(AdapterView<?> adapter, View item, int pos, long id) {
-				String s = (String)items.get(pos);
+			public void onItemClick(AdapterView<?> adapter, View view, int pos, long id) {
+				TodoItem todo = (TodoItem)adapter.getItemAtPosition(pos);
 				
-				Log.i(TAG, "onItemClick => s: " + s + ", pos: " + pos);
+				Log.i(TAG, "onItemClick => id: " + todo.getId() + ", body: " + todo.getBody() + ", pos: " + pos + ", id: " + id);
 				
-				launchEditView(s,pos);
+				launchEditView(pos+1, todo.getBody());
 			}
 		});
 		
 		lvItems.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
 			@Override
-			public boolean onItemLongClick(AdapterView<?> adapter, View item, int pos, long id) {
-				String s = (String)items.get(pos);
-				items.remove(pos);
-				itemsAdapter.notifyDataSetChanged();
-				writeItems();
+			public boolean onItemLongClick(AdapterView<?> adapter, final View view, int pos, long id) {
+				final TodoItem todo = (TodoItem)adapter.getItemAtPosition(pos);
 				
-				Log.i(TAG, "onItemLongClick => s: " + s);
-				Toast.makeText(ctx, "Removing [" + s + "]", Toast.LENGTH_LONG).show();
+				Log.i(TAG, "onItemLongClick => id: " + todo.getId() + ", body: " + todo.getBody());
+								
+				view.animate().setDuration(2000).alpha(0).withEndAction(new Runnable(){
+					@Override
+					public void run() {
+						items.remove(todo);
+						itemsAdapter.notifyDataSetChanged();
+						view.setAlpha(1);
+					}
+				});
+				
+				Toast.makeText(ctx, "Removing [" + todo.getBody() + "]", Toast.LENGTH_LONG).show();
+				
+				TodoItem remove = new TodoItem(todo.getBody());
+				remove.setId(pos+1);
+				db.deleteTodoItem(remove);
+				
 				return true;
 			}
 		});
@@ -96,59 +105,42 @@ public class TodoActivity extends Activity {
 	public void onAddItem(View v) {
 		EditText etNewItem = (EditText)findViewById(R.id.etNewItem);
 		String itemText = etNewItem.getText().toString();
-		itemsAdapter.add(itemText);
+		
+		TodoItem item = new TodoItem(itemText);
+		db.addTodoItem(item);
 		etNewItem.setText("");
-		writeItems();
+		
+		itemsAdapter.add(item);
+		itemsAdapter.notifyDataSetChanged();
 	}
 	
-	private void readItems() {
-		File filesDir = getFilesDir();
-		File toDoFile = new File(filesDir, "todo.txt");
-		try {
-			items = new ArrayList<String>(FileUtils.readLines(toDoFile));
-		} catch (IOException e) {
-			items = new ArrayList<String>();
-			Log.w(TAG, "!!! Caught an IOException: " + e.toString());
-		}		
-	}
-	
-	private void writeItems() {
-		File filesDir = getFilesDir();
-		File toDoFile = new File(filesDir, "todo.txt");
-		try {
-			FileUtils.writeLines(toDoFile, items);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void launchEditView(String itemtext, int itemidx) {
+	public void launchEditView(int id, String itemtext) {
 		Intent i = new Intent(TodoActivity.this, EditItemActivity.class);
+		i.putExtra("id", id);
 		i.putExtra("item", itemtext);
-		i.putExtra("index", itemidx);
-		
-		//startActivity(i);
-		
+				
 		Log.v(TAG, " launching EditItemActivity ... ");
 		startActivityForResult(i, REQUEST_CODE);
 	}
-
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {		
 		super.onActivityResult(requestCode, resultCode, data);
 		
 		if (resultCode==RESULT_OK && requestCode==REQUEST_CODE) {
+			int id = data.getExtras().getInt("id");
 			String item = data.getExtras().getString("item");
-			int index = data.getExtras().getInt("index");
+						
+			Log.i(TAG, "EditItemActivity returned: (" + id + "), (" + item + ")");
 			
-			Log.i(TAG, "EditItemActivity returned: (" + item + "), (" + index + ")");
+			TodoItem todo = new TodoItem(item);
+			todo.setId(id);
 			
-			items.set(index, item);
+			db.updateTodoItem(todo);
+			((TodoItem)itemsAdapter.getItem(id-1)).setBody(item);
 			itemsAdapter.notifyDataSetChanged();
 			
 			Toast.makeText(getApplicationContext(), "... saving to do list ...", Toast.LENGTH_SHORT).show();
-			writeItems();
 		}
 	}
 }

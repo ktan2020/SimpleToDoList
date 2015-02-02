@@ -13,19 +13,20 @@ public class EditItemActivity extends Activity {
 
 	private static final String TAG = "EditItemActivity";
 	
-	private static int index = -1;
+	private static int id = -1;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		int id = getIntent().getIntExtra("id", -1);
 		String item = getIntent().getStringExtra("item");
-		int index = getIntent().getIntExtra("index", -1);
-		EditItemActivity.index = index;
 		
-		if (index < 0) {
-			Log.e(TAG, "!!! index < 0 !!! : " + index);		
+		EditItemActivity.id = id;
+		
+		if (id < 0) {
+			Log.e(TAG, "!!! index < 0 !!! : " + id);		
 		}
 		
-		Log.i(TAG, "item: " + item + ", index: " + index);
+		Log.i(TAG, "id: " + id + ", item: " + item);
 		
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_edit_item);
@@ -39,9 +40,9 @@ public class EditItemActivity extends Activity {
 		String item = edt.getText().toString();
 		
 		Intent data = new Intent();
+		data.putExtra("id", EditItemActivity.id);
 		data.putExtra("item", item);
-		data.putExtra("index", EditItemActivity.index);
-		
+				
 		setResult(RESULT_OK, data);		
 		this.finish();
 	}
