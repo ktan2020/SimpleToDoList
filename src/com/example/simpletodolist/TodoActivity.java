@@ -11,7 +11,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -23,7 +22,7 @@ public class TodoActivity extends Activity {
 
 	
 	ArrayList<TodoItem> items;
-	ArrayAdapter<TodoItem> itemsAdapter;
+	TodoItemsAdapter<TodoItem> itemsAdapter; 
 	ListView lvItems;
 	TodoItemDatabase db;
 	
@@ -37,7 +36,8 @@ public class TodoActivity extends Activity {
 		
 		lvItems = (ListView)findViewById(R.id.lvItems);
 		
-		itemsAdapter = new ArrayAdapter<TodoItem>(this, android.R.layout.simple_list_item_1, items);
+		//itemsAdapter = new ArrayAdapter<TodoItem>(this, android.R.layout.simple_list_item_1, items);
+		itemsAdapter = new TodoItemsAdapter<TodoItem>(this, items);
 		lvItems.setAdapter(itemsAdapter);
 		
 		setUpListViewListener(this);
