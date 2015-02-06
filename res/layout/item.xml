@@ -7,16 +7,17 @@
         android:id="@+id/todo_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="left|center_vertical"
         android:layout_weight="1"
+        android:gravity="left|center_vertical"
         android:padding="10dp"
-        android:text="Medium Text"
+        android:text=""
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
     <TextView
         android:id="@+id/date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        style="@android:style/Widget.Holo.Spinner"
         android:layout_weight="1"
         android:gravity="right|center_vertical"
         android:hint="MM/DD/YYYY"
